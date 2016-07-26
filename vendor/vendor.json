@@ -1,0 +1,31 @@
+{
+	"comment": "",
+	"ignore": "test",
+	"package": [
+		{
+			"checksumSHA1": "/2XjtIKAKznkQhMzmpZKZA4c/C0=",
+			"path": "github.com/BeepBoopHQ/go-slackbot",
+			"revision": "58027c0d5238a0604305652ea526b3c18a7cead1",
+			"revisionTime": "2016-01-19T06:39:52Z"
+		},
+		{
+			"checksumSHA1": "CVPwX/CSFprO7H5YCNb6d2cy8gk=",
+			"path": "github.com/nlopes/slack",
+			"revision": "4feee83bb2b31d790977ce727a028c6a542c72c7",
+			"revisionTime": "2016-07-03T12:43:30Z"
+		},
+		{
+			"checksumSHA1": "9jjO5GjLa0XF/nfWihF02RoH4qc=",
+			"path": "golang.org/x/net/context",
+			"revision": "6a513affb38dc9788b449d59ffed099b8de18fa0",
+			"revisionTime": "2016-07-26T08:19:14Z"
+		},
+		{
+			"checksumSHA1": "likOl7O0BJntqagR050kkOBuY4o=",
+			"path": "golang.org/x/net/websocket",
+			"revision": "6a513affb38dc9788b449d59ffed099b8de18fa0",
+			"revisionTime": "2016-07-26T08:19:14Z"
+		}
+	],
+	"rootPath": "github.com/devoid/tablesetter"
+}
