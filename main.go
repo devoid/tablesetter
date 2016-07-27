@@ -34,9 +34,13 @@ var angrySetter = []string{
 	"┬─┬ ノ(TДTノ)",
 }
 
+const zenCap = 8
+
 type forceTracker struct {
-	mu    sync.Mutex
-	users map[string]time.Time
+	mu      sync.Mutex
+	angry   map[string]time.Time
+	zenmode map[string]int
+	zenCap  int // after so many angry replies, revert to zen
 }
 
 func (ft *forceTracker) HandleCooldown(tick time.Duration, cooldown time.Duration) {
@@ -45,9 +49,14 @@ func (ft *forceTracker) HandleCooldown(tick time.Duration, cooldown time.Duratio
 		<-ticker.C
 		now := time.Now()
 		ft.mu.Lock()
-		for u, t := range ft.users {
+		for u, t := range ft.angry {
 			if t.Add(cooldown).Before(now) {
-				delete(ft.users, u)
+				delete(ft.angry, u)
+
+				// clear zenmode flag
+				if _, ok := ft.zenmode[u]; ok {
+					delete(ft.zenmode, u)
+				}
 			}
 		}
 		ft.mu.Unlock()
@@ -59,32 +68,39 @@ func (ft *forceTracker) IsUserAnnoying(user string) bool {
 	ft.mu.Lock()
 	defer ft.mu.Unlock()
 
-	if _, ok := ft.users[user]; ok {
-		log.Printf("User %s is annoying", user)
-		ft.users[user] = time.Now()
+	ft.zenmode[user]++
+
+	if _, ok := ft.angry[user]; ok && ft.zenmode[user] < ft.zenCap {
+		log.Printf("User %s is annoying (cap %d)", user, ft.zenmode[user])
+		ft.angry[user] = time.Now()
 		return true
 	}
-	ft.users[user] = time.Now()
+	ft.angry[user] = time.Now()
 	return false
 }
 
-func newForceTracker() *forceTracker {
-	return &forceTracker{mu: sync.Mutex{}, users: make(map[string]time.Time)}
+func newForceTracker(zenCap int) *forceTracker {
+	return &forceTracker{
+		mu:      sync.Mutex{},
+		angry:   make(map[string]time.Time),
+		zenmode: make(map[string]int),
+		zenCap:  zenCap,
+	}
 }
 
 var tracker *forceTracker
 
 func main() {
-	tracker = newForceTracker()
+	tracker = newForceTracker(zenCap)
 	go tracker.HandleCooldown(time.Second, time.Minute*5)
 
 	bot := slackbot.New(os.Getenv("SLACK_API_TOKEN"))
-	bot.MessageHandler(SetTheTable)
+	bot.MessageHandler(setTheTable)
 	bot.Run()
 }
 
-func SetTheTable(ctx context.Context, bot *slackbot.Bot, evt *slack.MessageEvent) {
-	if strings.ContainsAny(evt.Text, tables) {
+func setTheTable(ctx context.Context, bot *slackbot.Bot, evt *slack.MessageEvent) {
+	if strings.Contains(evt.Text, tables[0]) || strings.Contains(evt.Text, tables[1]) {
 		resp := getReplyString(ctx, bot, evt)
 		bot.Reply(evt, resp, true)
 	}
@@ -93,9 +109,8 @@ func SetTheTable(ctx context.Context, bot *slackbot.Bot, evt *slack.MessageEvent
 func getReplyString(ctx context.Context, bot *slackbot.Bot, evt *slack.MessageEvent) string {
 	if tracker.IsUserAnnoying(evt.User) {
 		return randString(angrySetter)
-	} else {
-		return randString(zenSetter)
 	}
+	return randString(zenSetter)
 }
 
 func randString(set []string) string {
